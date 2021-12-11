@@ -3,12 +3,12 @@ import scipy.stats as st
 import numpy as np
 
 
-def g1(x, z, d):
-    return x[1]-x[0]
+def g1(xi, xd, d):
+    return xi[1]-xi[0]
 
 
-# def g1(x, z, d):
-#     return z[0]-x[0]
+# def g1(xi, xd, d):
+#     return xd[0]-xi[0]
 
 
 limitStateFunctions = [g1]
@@ -24,10 +24,10 @@ Xi = [
     genRV2Param(st.uniform, 5.0, 0.5),
     genRV2Param(st.uniform, 5.0, 0.5)
 ]
-ZLbUbi = [
+XdLbUb = [
     (genRV2Param(st.norm, 4.9, 0.5), genRV2Param(st.norm, 5.1, 0.5))
 ]
-Zi = [
+Xd = [
     genRV2Param(st.norm, 5.0, 0.5)
 ]
 d = [0.3]
@@ -39,6 +39,6 @@ corrMatrix[1, 0] = 0.6
 wasm = WASM(limitStateFunctions, Xi, correlationMatrix=corrMatrix, nSamples=500, samplingMethod="jitter")
 # wasm = WASM(limitStateFunctions, Xi, correlationMatrix=corrMatrix, nSamples=10, samplingMethod="jitter")
 # wasm.writeSamples('./samples.csv')
-# wasm = WASM(limitStateFunctions,Xi,nSamples=20000)
+# wasm = WASM(limitStateFunctions, Xi, nSamples=20000)
 wasm.calcLimitStateFunctions(disableProgressBar=False)
 print(wasm.calcBeta_Rashki())

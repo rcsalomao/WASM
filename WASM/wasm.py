@@ -54,7 +54,7 @@ class WASM(object):
             self,
             limitStateFunctions,
             Xi=None,
-            ZLbUbi=None,
+            XdLbUb=None,
             correlationMatrix=None,
             nSamples=10000,
             expInfSup=5.0,
@@ -64,18 +64,18 @@ class WASM(object):
 
         if Xi is None:
             Xi = []
-        if ZLbUbi is None:
-            ZLbUbi = []
+        if XdLbUb is None:
+            XdLbUb = []
         self.Xi = Xi
 
-        self.nX = len(Xi)
-        self.nZ = len(ZLbUbi)
-        self.nRV = self.nX+self.nZ
+        self.nXi = len(Xi)
+        self.nXd = len(XdLbUb)
+        self.nRV = self.nXi+self.nXd
 
         bounds = []
         for rv in Xi:
             bounds.append(limInfSup(rv, expInfSup))
-        for rvTuple in ZLbUbi:
+        for rvTuple in XdLbUb:
             lbLb, _ = limInfSup(rvTuple[0], expInfSup)
             _, ubUb = limInfSup(rvTuple[1], expInfSup)
             bounds.append((lbLb, ubUb))
@@ -157,13 +157,13 @@ class WASM(object):
             d = []
 
         nLimitStateFunctions = len(self.limitStateFunctions)
-        GXZdValues = np.zeros((self.actualNSamples, nLimitStateFunctions))
-        for i in tqdm(range(self.actualNSamples), disable=disableProgressBar, desc="Evaluating g(X,Z,d)", unit="samples", ascii=True):
+        GXdValues = np.zeros((self.actualNSamples, nLimitStateFunctions))
+        for i in tqdm(range(self.actualNSamples), disable=disableProgressBar, desc="Evaluating g(Xi,Xd,d)", unit="samples", ascii=True):
             # sleep(0.00025)
             for j in range(nLimitStateFunctions):
-                GXZdValues[i, j] = self.limitStateFunctions[j](
-                    self.ui[i, 0:self.nX],
-                    self.ui[i, self.nX:],
+                GXdValues[i, j] = self.limitStateFunctions[j](
+                    self.ui[i, 0:self.nXi],
+                    self.ui[i, self.nXi:],
                     d
                 )
 
@@ -172,20 +172,20 @@ class WASM(object):
             systemFunctionsValues = np.zeros((self.actualNSamples, nSystemFunctions))
             for i in range(self.actualNSamples):
                 for j in range(nSystemFunctions):
-                    systemFunctionsValues[i, j] = systemFunctions[j](GXZdValues[i, :])
-            GXZdSystemValues = np.concatenate((GXZdValues, systemFunctionsValues), axis=1)
+                    systemFunctionsValues[i, j] = systemFunctions[j](GXdValues[i, :])
+            GXdSystemValues = np.concatenate((GXdValues, systemFunctionsValues), axis=1)
         else:
-            GXZdSystemValues = GXZdValues
+            GXdSystemValues = GXdValues
 
-        self.Indic = 1.0*(GXZdSystemValues < 0.0)
+        self.Indic = 1.0*(GXdSystemValues < 0.0)
 
-    def calcBeta_Rashki(self, Zi=None):
-        if Zi is None:
-            Zi = []
-        assert(len(Zi) == self.nZ)
+    def calcBeta_Rashki(self, Xd=None):
+        if Xd is None:
+            Xd = []
+        assert(len(Xd) == self.nXd)
 
         pdf = np.zeros_like(self.ui)
-        randomVars = self.Xi+Zi
+        randomVars = self.Xi+Xd
         for i in range(self.nRV):
             pdf[:, i] = randomVars[i].pdf(self.ui[:, i])
 
