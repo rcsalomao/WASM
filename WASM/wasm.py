@@ -6,45 +6,42 @@ from itertools import product
 from scipy.optimize import root
 
 
-def errorRV2Param(x, rv, mean, std):
-    randomVar = rv(x[0], scale=x[1])
-    return [mean-randomVar.mean(), std-randomVar.std()]
+def error_RV_2_param(x, rv, mean, std):
+    random_var = rv(x[0], scale=x[1])
+    return [mean-random_var.mean(), std-random_var.std()]
 
 
-def genRV2Param(rv, mean, std, x0=(4.2, 2.4), method='lm', tol=1e-5):
-    sol = root(errorRV2Param, x0=x0, args=(rv, mean, std), method=method)
-    randomVar = rv(sol.x[0], scale=sol.x[1])
-    assert((abs(randomVar.mean()-mean) < tol) and (abs(randomVar.std() - std) < tol))
-    return randomVar
+def generate_RV_2_param(rv, mean, std, x0=(4.2, 2.4), method='lm', tol=1e-5):
+    sol = root(error_RV_2_param, x0=x0, args=(rv, mean, std), method=method)
+    random_var = rv(sol.x[0], scale=sol.x[1])
+    assert((abs(random_var.mean()-mean) < tol) and (abs(random_var.std() - std) < tol))
+    return random_var
 
 
-def limInfSup(rv, expInfSup):
-    pInf = np.power(10.0, -expInfSup)
-    pSup = 1.0 - pInf
-    return (rv.ppf(pInf), rv.ppf(pSup))
+def inferior_superior_limits(rv, inf_sup_exponent):
+    inf_prob = np.power(10.0, -inf_sup_exponent)
+    sup_prob = 1.0 - inf_prob
+    return (rv.ppf(inf_prob), rv.ppf(sup_prob))
 
 
-def jitteringSampling(nSamples, bounds):
-    nDim = len(bounds)
-    nDiv = int(np.power(nSamples, 1.0/nDim))+1
-
-    dimRanges = []
-    for i in range(nDim):
+def jittering_sampling(n_samples, bounds):
+    n_dim = len(bounds)
+    n_div = int(np.power(n_samples, 1.0/n_dim)) + 1
+    dim_ranges = []
+    for i in range(n_dim):
         lb, ub = bounds[i]
-        dx = (ub-lb)/nDiv
-        dimRange = []
-        for j in range(nDiv):
+        dx = (ub-lb)/n_div
+        dim_range = []
+        for j in range(n_div):
             lbx = lb + j*dx
             ubx = lb + (j+1)*dx
-            dimRange.append((lbx, ubx))
-        dimRanges.append(dimRange)
-
-    products = list(product(range(nDiv), repeat=nDim))
-
-    xs = np.zeros((len(products), nDim))
+            dim_range.append((lbx, ubx))
+        dim_ranges.append(dim_range)
+    products = list(product(range(n_div), repeat=n_dim))
+    xs = np.zeros((len(products), n_dim))
     for j in range(len(products)):
-        for i in range(nDim):
-            lbx, ubx = dimRanges[i][products[j][i]]
+        for i in range(n_dim):
+            lbx, ubx = dim_ranges[i][products[j][i]]
             xs[j, i] = np.random.uniform(lbx, ubx)
     return xs
 
@@ -52,154 +49,145 @@ def jitteringSampling(nSamples, bounds):
 class WASM(object):
     def __init__(
             self,
-            limitStateFunctions,
+            limit_state_functions,
             Xi=None,
-            XdLbUb=None,
-            correlationMatrix=None,
-            nSamples=10000,
-            expInfSup=5.0,
-            samplingMethod="jitter"):
-
-        self.limitStateFunctions = limitStateFunctions
-
+            Xd_lbub=None,
+            correlation_matrix=None,
+            n_samples=10000,
+            inferior_superior_exponent=5.0,
+            sampling_method="jitter"):
+        self.limit_state_functions = limit_state_functions
         if Xi is None:
             Xi = []
-        if XdLbUb is None:
-            XdLbUb = []
+        if Xd_lbub is None:
+            Xd_lbub = []
         self.Xi = Xi
-
-        self.nXi = len(Xi)
-        self.nXd = len(XdLbUb)
-        self.nRV = self.nXi+self.nXd
-
+        self.n_Xi = len(Xi)
+        self.n_Xd = len(Xd_lbub)
+        self.n_rv = self.n_Xi+self.n_Xd
         bounds = []
         for rv in Xi:
-            bounds.append(limInfSup(rv, expInfSup))
-        for rvTuple in XdLbUb:
-            lbLb, _ = limInfSup(rvTuple[0], expInfSup)
-            _, ubUb = limInfSup(rvTuple[1], expInfSup)
+            bounds.append(inferior_superior_limits(rv, inferior_superior_exponent))
+        for rv_tuple in Xd_lbub:
+            lbLb, _ = inferior_superior_limits(rv_tuple[0], inferior_superior_exponent)
+            _, ubUb = inferior_superior_limits(rv_tuple[1], inferior_superior_exponent)
             bounds.append((lbLb, ubUb))
-
-        nBounds = len(bounds)
-        if correlationMatrix is not None:
-            assert(correlationMatrix.shape[0] == correlationMatrix.shape[1])
-            assert(nBounds == correlationMatrix.shape[0])
-            assert(np.all((correlationMatrix-correlationMatrix.T) < 1e-8))
-            if samplingMethod == "jitter":
-                boundsCorr = [(1e-16, 1.0-1e-16)]*nBounds
-                uiCorr = jitteringSampling(nSamples, boundsCorr)
-                # Jzy = np.linalg.cholesky(correlationMatrix)
-                w, ABarra = np.linalg.eig(correlationMatrix)
-                LambdaSquareRooted = np.eye(len(w))*(np.sqrt(w))
-                Jzy = np.dot(ABarra, LambdaSquareRooted)
-                y = st.norm.ppf(uiCorr)
+        n_bounds = len(bounds)
+        if correlation_matrix is not None:
+            assert(correlation_matrix.shape[0] == correlation_matrix.shape[1])
+            assert(n_bounds == correlation_matrix.shape[0])
+            assert(np.all((correlation_matrix-correlation_matrix.T) < 1e-8))
+            if sampling_method == "jitter":
+                bounds_corr = [(1e-16, 1.0-1e-16)]*n_bounds
+                ui_corr = jittering_sampling(n_samples, bounds_corr)
+                # Jzy = np.linalg.cholesky(correlation_matrix)
+                w, A_barra = np.linalg.eig(correlation_matrix)
+                lambda_square_rooted = np.eye(len(w))*(np.sqrt(w))
+                Jzy = np.dot(A_barra, lambda_square_rooted)
+                y = st.norm.ppf(ui_corr)
                 z = np.dot(y, Jzy.T)
-
                 probs = st.norm.cdf(z)
-
                 self.ui = np.zeros_like(probs)
-                for i in range(nBounds):
+                for i in range(n_bounds):
                     lb, ub = bounds[i]
                     self.ui[:, i] = st.uniform(lb, ub-lb).ppf(probs[:, i])
-            elif samplingMethod == "uniform":
-                # Jzy = np.linalg.cholesky(correlationMatrix)
-                w, ABarra = np.linalg.eig(correlationMatrix)
-                LambdaSquareRooted = np.eye(len(w))*(np.sqrt(w))
-                Jzy = np.dot(ABarra, LambdaSquareRooted)
-                y = np.random.randn(nSamples, nBounds)
+            elif sampling_method == "uniform":
+                # Jzy = np.linalg.cholesky(correlation_matrix)
+                w, A_barra = np.linalg.eig(correlation_matrix)
+                lambda_square_rooted = np.eye(len(w))*(np.sqrt(w))
+                Jzy = np.dot(A_barra, lambda_square_rooted)
+                y = np.random.randn(n_samples, n_bounds)
                 z = np.dot(y, Jzy.T)
-
                 probs = st.norm.cdf(z)
-
                 self.ui = np.zeros_like(probs)
-                for i in range(nBounds):
+                for i in range(n_bounds):
                     lb, ub = bounds[i]
                     self.ui[:, i] = st.uniform(lb, ub-lb).ppf(probs[:, i])
             else:
-                print("Error. Please enter either 'jitter' or 'uniform'.")
+                print(">>>Error. Please enter either 'jitter' or 'uniform'.")
                 exit(2)
         else:
-            if samplingMethod == "jitter":
-                self.ui = jitteringSampling(nSamples, bounds)
-            elif samplingMethod == "uniform":
+            if sampling_method == "jitter":
+                self.ui = jittering_sampling(n_samples, bounds)
+            elif sampling_method == "uniform":
                 lb = [lo for lo, up in bounds]
                 ub = [up for lo, up in bounds]
-                self.ui = np.random.uniform(lb, ub, (nSamples, nBounds))
+                self.ui = np.random.uniform(lb, ub, (n_samples, n_bounds))
             else:
-                print("Error. Please enter either 'jitter' or 'uniform'.")
+                print(">>>Error. Please enter either 'jitter' or 'uniform'.")
                 exit(2)
+        self.actual_n_samples = self.ui.shape[0]
+        # plt.plot(self.ui[:, 0], self.ui[:, 1], 'ko', markersize=1)
+        # plt.xlim(bounds[0])
+        # plt.ylim(bounds[1])
+        # plt.show()
 
-        self.actualNSamples = self.ui.shape[0]
-
-        plt.plot(self.ui[:, 0], self.ui[:, 1], 'ko', markersize=1)
-        plt.xlim(bounds[0])
-        plt.ylim(bounds[1])
-        plt.show()
-
-    def writeSamples(self, fileName):
-        with open(fileName, "w") as f:
-            for i in range(self.nRV-1):
+    def write_samples(self, filename, d_lbub=None):
+        with open(filename, "w") as f:
+            if d_lbub is not None:
+                n_d = len(d_lbub)
+                n_samples, _ = self.ui.shape
+                lb = [lo for lo, up in d_lbub]
+                ub = [up for lo, up in d_lbub]
+                ui_ds = np.random.uniform(lb, ub, (n_samples, n_d))
+                ui = np.concatenate((ui_ds, self.ui), axis=1)
+                for i in range(n_d):
+                    f.write("d%s" % (i+1))
+                    f.write(",")
+            else:
+                ui = self.ui
+            for i in range(self.n_rv-1):
                 f.write("RV%s" % (i+1))
                 f.write(",")
-            f.write("RV%s" % (self.nRV))
+            f.write("RV%s" % (self.n_rv))
             f.write("\n")
-
-            rows, cols = self.ui.shape
+            rows, cols = ui.shape
             for i in range(rows):
                 for j in range(cols-1):
-                    f.write(str(self.ui[i, j]))
+                    f.write(str(ui[i, j]))
                     f.write(",")
-                f.write(str(self.ui[i, cols-1]))
+                f.write(str(ui[i, cols-1]))
                 f.write("\n")
 
-    def calcLimitStateFunctions(self, d=None, systemFunctions=None, disableProgressBar=False):
+    def compute_limit_state_functions(self, d=None, system_functions=None, disable_progress_bar=False):
         if d is None:
             d = []
-
-        nLimitStateFunctions = len(self.limitStateFunctions)
-        GXdValues = np.zeros((self.actualNSamples, nLimitStateFunctions))
-        for i in tqdm(range(self.actualNSamples), disable=disableProgressBar, desc="Evaluating g(Xi,Xd,d)", unit="samples", ascii=True):
+        n_limit_state_functions = len(self.limit_state_functions)
+        gX_values = np.zeros((self.actual_n_samples, n_limit_state_functions))
+        for i in tqdm(range(self.actual_n_samples), disable=disable_progress_bar, desc="Evaluating g(Xi, Xd, d)", unit="samples", ascii=True):
             # sleep(0.00025)
-            for j in range(nLimitStateFunctions):
-                GXdValues[i, j] = self.limitStateFunctions[j](
-                    self.ui[i, 0:self.nXi],
-                    self.ui[i, self.nXi:],
-                    d
-                )
-
-        if systemFunctions is not None:
-            nSystemFunctions = len(systemFunctions)
-            systemFunctionsValues = np.zeros((self.actualNSamples, nSystemFunctions))
-            for i in range(self.actualNSamples):
-                for j in range(nSystemFunctions):
-                    systemFunctionsValues[i, j] = systemFunctions[j](GXdValues[i, :])
-            GXdSystemValues = np.concatenate((GXdValues, systemFunctionsValues), axis=1)
+            for j in range(n_limit_state_functions):
+                gX_values[i, j] = self.limit_state_functions[j](
+                    self.ui[i, 0:self.n_Xi],
+                    self.ui[i, self.n_Xi:],
+                    d)
+        if system_functions is not None:
+            n_system_functions = len(system_functions)
+            system_functions_values = np.zeros((self.actual_n_samples, n_system_functions))
+            for i in range(self.actual_n_samples):
+                for j in range(n_system_functions):
+                    system_functions_values[i, j] = system_functions[j](gX_values[i, :])
+            gX_system_values = np.concatenate((gX_values, system_functions_values), axis=1)
         else:
-            GXdSystemValues = GXdValues
+            gX_system_values = gX_values
+        self.indicadora = 1.0*(gX_system_values < 0.0)
 
-        self.Indic = 1.0*(GXdSystemValues < 0.0)
-
-    def calcBeta_Rashki(self, Xd=None):
+    def compute_Beta_Rashki(self, Xd=None):
         if Xd is None:
             Xd = []
-        assert(len(Xd) == self.nXd)
-
-        pdf = np.zeros_like(self.ui)
-        randomVars = self.Xi+Xd
-        for i in range(self.nRV):
-            pdf[:, i] = randomVars[i].pdf(self.ui[:, i])
-
-        wi = np.multiply.reduce(pdf, axis=1)
-        wTotal = wi.sum()
-        wNormalized = wi/wTotal
-
-        numerator = np.zeros_like(self.Indic)
-        indicCols = self.Indic.shape[1]
-        for i in range(indicCols):
-            numerator[:, i] = self.Indic[:, i]*wNormalized
-
-        pfs = np.zeros(indicCols)
-        for i in range(indicCols):
-            pfs[i] = min(numerator[:, i].sum(), 1.0-1e-16)
-
+        assert(len(Xd) == self.n_Xd)
+        pdfs = np.zeros_like(self.ui)
+        random_vars = self.Xi+Xd
+        for i in range(self.n_rv):
+            pdfs[:, i] = random_vars[i].pdf(self.ui[:, i])
+        wi = np.multiply.reduce(pdfs, axis=1)
+        w_total = wi.sum()
+        w_normalized = wi/w_total
+        w_failure = np.zeros_like(self.indicadora)
+        indicadora_cols = self.indicadora.shape[1]
+        for i in range(indicadora_cols):
+            w_failure[:, i] = self.indicadora[:, i]*w_normalized
+        pfs = np.zeros(indicadora_cols)
+        for i in range(indicadora_cols):
+            pfs[i] = min(w_failure[:, i].sum(), 1.0-1e-16)
         return (pfs, -st.norm.ppf(pfs))
