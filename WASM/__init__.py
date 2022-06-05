@@ -1,5 +1,4 @@
-from .wasm import WASM
-from .wasm import generate_RV_2_param
+from .wasm import WASM, generate_RV_2_param, serial_system, parallel_system
 
 
-__all__ = ["WASM", "generate_RV_2_param"]
+__all__ = ["WASM", "generate_RV_2_param", "serial_system", "parallel_system"]
