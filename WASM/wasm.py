@@ -121,8 +121,8 @@ class WASM(object):
             if sampling_method == "jitter":
                 self.ui = jittering_sampling(n_samples, bounds)
             elif sampling_method == "uniform":
-                lb = [lo for lo, up in bounds]
-                ub = [up for lo, up in bounds]
+                lb = [lo for lo, _ in bounds]
+                ub = [up for _, up in bounds]
                 self.ui = np.random.uniform(lb, ub, (n_samples, n_bounds))
             else:
                 print(">>>Error. Please enter either 'jitter' or 'uniform'.")
@@ -135,29 +135,27 @@ class WASM(object):
 
     def write_samples(self, filename, d_lbub=None):
         with open(filename, "w") as f:
+            for i in range(self.n_rv - 1):
+                f.write("RV%s," % (i + 1))
+            f.write("RV%s" % (self.n_rv))
             if d_lbub is not None:
                 n_d = len(d_lbub)
                 n_samples, _ = self.ui.shape
-                lb = [lo for lo, up in d_lbub]
-                ub = [up for lo, up in d_lbub]
+                lb = [lo for lo, _ in d_lbub]
+                ub = [up for _, up in d_lbub]
                 ui_ds = np.random.uniform(lb, ub, (n_samples, n_d))
-                ui = np.concatenate((ui_ds, self.ui), axis=1)
-                for i in range(n_d):
-                    f.write("d%s" % (i + 1))
-                    f.write(",")
+                ui = np.concatenate((self.ui, ui_ds), axis=1)
+                for i in range(n_d - 1):
+                    f.write("d%s," % (i + 1))
+                f.write("d%s" % (n_d))
             else:
                 ui = self.ui
-            for i in range(self.n_rv - 1):
-                f.write("RV%s" % (i + 1))
-                f.write(",")
-            f.write("RV%s" % (self.n_rv))
             f.write("\n")
             rows, cols = ui.shape
             for i in range(rows):
                 for j in range(cols - 1):
-                    f.write(str(ui[i, j]))
-                    f.write(",")
-                f.write(str(ui[i, cols - 1]))
+                    f.write("%s," % (ui[i, j]))
+                f.write("%s" % (ui[i, cols - 1]))
                 f.write("\n")
 
     def compute_limit_state_functions(
@@ -174,7 +172,6 @@ class WASM(object):
             unit="samples",
             ascii=True,
         ):
-            # sleep(0.00025)
             for j in range(n_limit_state_functions):
                 gX_values[i, j] = self.limit_state_functions[j](
                     self.ui[i, 0 : self.n_Xi], self.ui[i, self.n_Xi :], d

@@ -3,12 +3,12 @@ import scipy.stats as st
 import numpy as np
 
 
-def g1(xi, xd, d):
-    return xi[1] - xi[0]
+def g1(Xi, Xd, d):
+    return Xi[1] - Xi[0]
 
 
-# def g1(xi, xd, d):
-#     return xd[0]-xi[0]
+# def g1(Xi, Xd, d):
+#     return Xd[0]-Xi[0]
 
 
 limit_state_functions = [g1]
