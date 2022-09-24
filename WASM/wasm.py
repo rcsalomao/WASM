@@ -210,14 +210,14 @@ class WASM(object):
         for i in range(indicadora_cols):
             pfs[i] = min(w_failure[:, i].sum(), 1.0 - 1e-16)
         n_limit_state_functions = len(self.limit_state_functions)
-        gX_pf_beta = namedtuple("gx", "pf, beta")
-        system_pf_beta = namedtuple("system", "pf, beta")
+        gXs_results = namedtuple("gXs_results", "pfs, betas")
+        systems_results = namedtuple("systems_results", "pfs, betas")
         return (
-            gX_pf_beta(
+            gXs_results(
                 pfs[0:n_limit_state_functions],
                 -st.norm.ppf(pfs[0:n_limit_state_functions]),
             ),
-            system_pf_beta(
+            systems_results(
                 pfs[n_limit_state_functions:],
                 -st.norm.ppf(pfs[n_limit_state_functions:]),
             ),

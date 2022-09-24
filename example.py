@@ -55,10 +55,10 @@ wasm = WASM(
 wasm.compute_limit_state_functions(
     system_functions=system_functions,
     disable_progress_bar=False
-    # disable_progress_bar=False
+    # disable_progress_bar=True
 )
-result = wasm.compute_Beta_Rashki()
-gX_pf_beta, system_pf_beta = result
-print(result)
-print(gX_pf_beta.beta)
-print(system_pf_beta.beta)
+gXs_results, systems_results = wasm.compute_Beta_Rashki()
+print(gXs_results)
+print(systems_results)
+print(gXs_results.betas)
+print(systems_results.betas)
