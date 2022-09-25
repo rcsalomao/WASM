@@ -212,7 +212,8 @@ class WASM(object):
         n_limit_state_functions = len(self.limit_state_functions)
         gXs_results = namedtuple("gXs_results", "pfs, betas")
         systems_results = namedtuple("systems_results", "pfs, betas")
-        return (
+        result = namedtuple("result", "gXs_results, systems_results")
+        return result(
             gXs_results(
                 pfs[0:n_limit_state_functions],
                 -st.norm.ppf(pfs[0:n_limit_state_functions]),
