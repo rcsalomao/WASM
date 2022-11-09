@@ -59,7 +59,6 @@ def jittering_sampling(n_samples, bounds):
 class WASM(object):
     def __init__(
         self,
-        limit_state_functions,
         Xi=None,
         Xd_lbub=None,
         correlation_matrix=None,
@@ -67,7 +66,6 @@ class WASM(object):
         inferior_superior_exponent=5.0,
         sampling_method="jitter",
     ):
-        self.limit_state_functions = limit_state_functions
         if Xi is None:
             Xi = []
         if Xd_lbub is None:
@@ -159,12 +157,12 @@ class WASM(object):
                 f.write("\n")
 
     def compute_limit_state_functions(
-        self, d=None, system_functions=None, disable_progress_bar=False
+        self, limit_state_functions, system_functions=None, d=None, disable_progress_bar=False
     ):
         if d is None:
             d = []
-        n_limit_state_functions = len(self.limit_state_functions)
-        gX_values = np.zeros((self.actual_n_samples, n_limit_state_functions))
+        self.n_limit_state_functions = len(limit_state_functions)
+        gX_values = np.zeros((self.actual_n_samples, self.n_limit_state_functions))
         for i in tqdm(
             range(self.actual_n_samples),
             disable=disable_progress_bar,
@@ -172,8 +170,8 @@ class WASM(object):
             unit="samples",
             ascii=True,
         ):
-            for j in range(n_limit_state_functions):
-                gX_values[i, j] = self.limit_state_functions[j](
+            for j in range(self.n_limit_state_functions):
+                gX_values[i, j] = limit_state_functions[j](
                     self.ui[i, 0 : self.n_Xi], self.ui[i, self.n_Xi :], d
                 )
         if system_functions is not None:
@@ -209,17 +207,16 @@ class WASM(object):
         pfs = np.zeros(indicadora_cols)
         for i in range(indicadora_cols):
             pfs[i] = min(w_failure[:, i].sum(), 1.0 - 1e-16)
-        n_limit_state_functions = len(self.limit_state_functions)
         gXs_results = namedtuple("gXs_results", "pfs, betas")
         systems_results = namedtuple("systems_results", "pfs, betas")
         result = namedtuple("result", "gXs_results, systems_results")
         return result(
             gXs_results(
-                pfs[0:n_limit_state_functions],
-                -st.norm.ppf(pfs[0:n_limit_state_functions]),
+                pfs[0:self.n_limit_state_functions],
+                -st.norm.ppf(pfs[0:self.n_limit_state_functions]),
             ),
             systems_results(
-                pfs[n_limit_state_functions:],
-                -st.norm.ppf(pfs[n_limit_state_functions:]),
+                pfs[self.n_limit_state_functions:],
+                -st.norm.ppf(pfs[self.n_limit_state_functions:]),
             ),
         )

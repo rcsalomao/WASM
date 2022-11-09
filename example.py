@@ -43,16 +43,16 @@ corr_matrix[0, 1] = 0.6
 corr_matrix[1, 0] = 0.6
 
 wasm = WASM(
-    limit_state_functions,
     Xi,
     correlation_matrix=corr_matrix,
     n_samples=500,
     sampling_method="jitter",
 )
-# wasm = WASM(limit_state_functions, Xi, correlation_matrix=corr_matrix, n_samples=10, sampling_method="uniform")
+# wasm = WASM(Xi, correlation_matrix=corr_matrix, n_samples=10, sampling_method="uniform")
 # wasm.write_samples('./samples.csv')
-# wasm = WASM(limit_state_functions, Xi, n_samples=20000)
+# wasm = WASM(Xi, n_samples=20000)
 wasm.compute_limit_state_functions(
+    limit_state_functions,
     system_functions=system_functions,
     disable_progress_bar=False
     # disable_progress_bar=True
