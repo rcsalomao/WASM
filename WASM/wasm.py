@@ -1,6 +1,8 @@
 from collections import namedtuple
 import numpy as np
 import scipy.stats as st
+from scipy.stats.qmc import scale, Sobol, LatinHypercube, Halton
+import warnings
 from tqdm import tqdm
 from itertools import product
 from scipy.optimize import root
@@ -34,6 +36,13 @@ def inferior_superior_limits(rv, inf_sup_exponent):
     return (rv.ppf(inf_prob), rv.ppf(sup_prob))
 
 
+def uniform_sampling(n_samples, bounds):
+    n_bounds = len(bounds)
+    lb = [lo for lo, _ in bounds]
+    ub = [up for _, up in bounds]
+    return np.random.uniform(lb, ub, (n_samples, n_bounds))
+
+
 def jittering_sampling(n_samples, bounds):
     n_dim = len(bounds)
     n_div = int(np.power(n_samples, 1.0 / n_dim)) + 1
@@ -56,6 +65,50 @@ def jittering_sampling(n_samples, bounds):
     return xs
 
 
+def sobol_sampling(n_samples, bounds):
+    n_dim = len(bounds)
+    sampler = Sobol(n_dim)
+    lb = [lo for lo, _ in bounds]
+    ub = [up for _, up in bounds]
+    warnings.filterwarnings(
+        "ignore",
+        message="The balance properties of Sobol' points require n to be a power of 2.",
+    )
+    return scale(sampler.random(n_samples), lb, ub)
+
+
+def halton_sampling(n_samples, bounds):
+    n_dim = len(bounds)
+    sampler = Halton(n_dim)
+    lb = [lo for lo, _ in bounds]
+    ub = [up for _, up in bounds]
+    return scale(sampler.random(n_samples), lb, ub)
+
+
+def lhc_sampling(n_samples, bounds):
+    n_dim = len(bounds)
+    sampler = LatinHypercube(n_dim)
+    lb = [lo for lo, _ in bounds]
+    ub = [up for _, up in bounds]
+    return scale(sampler.random(n_samples), lb, ub)
+
+
+def calc_correlated_samples(ui_uncorr, correlation_matrix, bounds):
+    n_bounds = len(bounds)
+    # Jzy = np.linalg.cholesky(correlation_matrix)
+    w, A_barra = np.linalg.eig(correlation_matrix)
+    lambda_square_rooted = np.eye(len(w)) * (np.sqrt(w))
+    Jzy = np.dot(A_barra, lambda_square_rooted)
+    y = st.norm.ppf(ui_uncorr)
+    z = np.dot(y, Jzy.T)
+    probs = st.norm.cdf(z)
+    ui = np.zeros_like(probs)
+    for i in range(n_bounds):
+        lb, ub = bounds[i]
+        ui[:, i] = st.uniform(lb, ub - lb).ppf(probs[:, i])
+    return ui
+
+
 class WASM(object):
     def __init__(
         self,
@@ -66,6 +119,16 @@ class WASM(object):
         inferior_superior_exponent=5.0,
         sampling_method="jitter",
     ):
+        sampling_map = {
+            "jitter": jittering_sampling,
+            "uniform": uniform_sampling,
+            "sobol": sobol_sampling,
+            "halton": halton_sampling,
+            "lhs": lhc_sampling,
+        }
+        assert (
+            sampling_method in sampling_map.keys()
+        ), "Please enter either 'jitter', 'uniform', 'sobol', 'halton' or 'lhs'."
         if Xi is None:
             Xi = []
         if Xd_lbub is None:
@@ -86,47 +149,14 @@ class WASM(object):
             assert correlation_matrix.shape[0] == correlation_matrix.shape[1]
             assert n_bounds == correlation_matrix.shape[0]
             assert np.all((correlation_matrix - correlation_matrix.T) < 1e-8)
-            if sampling_method == "jitter":
-                bounds_corr = [(1e-16, 1.0 - 1e-16)] * n_bounds
-                ui_corr = jittering_sampling(n_samples, bounds_corr)
-                # Jzy = np.linalg.cholesky(correlation_matrix)
-                w, A_barra = np.linalg.eig(correlation_matrix)
-                lambda_square_rooted = np.eye(len(w)) * (np.sqrt(w))
-                Jzy = np.dot(A_barra, lambda_square_rooted)
-                y = st.norm.ppf(ui_corr)
-                z = np.dot(y, Jzy.T)
-                probs = st.norm.cdf(z)
-                self.ui = np.zeros_like(probs)
-                for i in range(n_bounds):
-                    lb, ub = bounds[i]
-                    self.ui[:, i] = st.uniform(lb, ub - lb).ppf(probs[:, i])
-            elif sampling_method == "uniform":
-                # Jzy = np.linalg.cholesky(correlation_matrix)
-                w, A_barra = np.linalg.eig(correlation_matrix)
-                lambda_square_rooted = np.eye(len(w)) * (np.sqrt(w))
-                Jzy = np.dot(A_barra, lambda_square_rooted)
-                y = np.random.randn(n_samples, n_bounds)
-                z = np.dot(y, Jzy.T)
-                probs = st.norm.cdf(z)
-                self.ui = np.zeros_like(probs)
-                for i in range(n_bounds):
-                    lb, ub = bounds[i]
-                    self.ui[:, i] = st.uniform(lb, ub - lb).ppf(probs[:, i])
-            else:
-                print(">>>Error. Please enter either 'jitter' or 'uniform'.")
-                exit(2)
+            zero_approx = 1e-15
+            bounds_uncorr = [(zero_approx, 1.0 - zero_approx)] * n_bounds
+            ui_uncorr = sampling_map[sampling_method](n_samples, bounds_uncorr)
+            self.ui = calc_correlated_samples(ui_uncorr, correlation_matrix, bounds)
         else:
-            if sampling_method == "jitter":
-                self.ui = jittering_sampling(n_samples, bounds)
-            elif sampling_method == "uniform":
-                lb = [lo for lo, _ in bounds]
-                ub = [up for _, up in bounds]
-                self.ui = np.random.uniform(lb, ub, (n_samples, n_bounds))
-            else:
-                print(">>>Error. Please enter either 'jitter' or 'uniform'.")
-                exit(2)
+            self.ui = sampling_map[sampling_method](n_samples, bounds)
         self.actual_n_samples = self.ui.shape[0]
-        # plt.plot(self.ui[:, 0], self.ui[:, 1], 'ko', markersize=1)
+        # plt.plot(self.ui[:, 0], self.ui[:, 1], "ko", markersize=1)
         # plt.xlim(bounds[0])
         # plt.ylim(bounds[1])
         # plt.show()
@@ -157,7 +187,11 @@ class WASM(object):
                 f.write("\n")
 
     def compute_limit_state_functions(
-        self, limit_state_functions, system_functions=None, d=None, disable_progress_bar=False
+        self,
+        limit_state_functions,
+        system_functions=None,
+        d=None,
+        disable_progress_bar=False,
     ):
         if d is None:
             d = []
@@ -212,11 +246,11 @@ class WASM(object):
         result = namedtuple("result", "gXs_results, systems_results")
         return result(
             gXs_results(
-                pfs[0:self.n_limit_state_functions],
-                -st.norm.ppf(pfs[0:self.n_limit_state_functions]),
+                pfs[0 : self.n_limit_state_functions],
+                -st.norm.ppf(pfs[0 : self.n_limit_state_functions]),
             ),
             systems_results(
-                pfs[self.n_limit_state_functions:],
-                -st.norm.ppf(pfs[self.n_limit_state_functions:]),
+                pfs[self.n_limit_state_functions :],
+                -st.norm.ppf(pfs[self.n_limit_state_functions :]),
             ),
         )

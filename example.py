@@ -47,6 +47,10 @@ wasm = WASM(
     correlation_matrix=corr_matrix,
     n_samples=500,
     sampling_method="jitter",
+    # sampling_method="uniform",
+    # sampling_method="sobol",
+    # sampling_method="halton",
+    # sampling_method="lhs",
 )
 # wasm = WASM(Xi, correlation_matrix=corr_matrix, n_samples=10, sampling_method="uniform")
 # wasm.write_samples('./samples.csv')
