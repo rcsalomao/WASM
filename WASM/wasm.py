@@ -10,12 +10,27 @@ from scipy.optimize import root
 # import matplotlib.pyplot as plt
 
 
-def serial_system(*gX_values):
-    return min(gX_values)
+def serial_system(values):
+    return min(values)
 
 
-def parallel_system(*gX_values):
-    return max(gX_values)
+def parallel_system(values):
+    return max(values)
+
+
+def calc_system_value(system_definition: dict, values_gX):
+    values_system = []
+    for k in system_definition:
+        values = system_definition[k]
+        for val in values:
+            if isinstance(val, int):
+                values_system.append(values_gX[val])
+            if isinstance(val, dict):
+                values_system.append(calc_system_value(val, values_gX))
+        if k == "serial":
+            return serial_system(values_system)
+        if k == "parallel":
+            return parallel_system(values_system)
 
 
 def error_RV_2_param(x, rv, mean, std):
@@ -189,7 +204,7 @@ class WASM(object):
     def compute_limit_state_functions(
         self,
         limit_state_functions,
-        system_functions=None,
+        system_definitions=None,
         d=None,
         disable_progress_bar=False,
     ):
@@ -208,17 +223,15 @@ class WASM(object):
                 gX_values[i, j] = limit_state_functions[j](
                     self.ui[i, 0 : self.n_Xi], self.ui[i, self.n_Xi :], d
                 )
-        if system_functions is not None:
-            n_system_functions = len(system_functions)
-            system_functions_values = np.zeros(
-                (self.actual_n_samples, n_system_functions)
-            )
+        if system_definitions is not None:
+            n_system_definitions = len(system_definitions)
+            systems_values = np.zeros((self.actual_n_samples, n_system_definitions))
             for i in range(self.actual_n_samples):
-                for j in range(n_system_functions):
-                    system_functions_values[i, j] = system_functions[j](gX_values[i, :])
-            gX_system_values = np.concatenate(
-                (gX_values, system_functions_values), axis=1
-            )
+                for j in range(n_system_definitions):
+                    systems_values[i, j] = calc_system_value(
+                        system_definitions[j], gX_values[i, :]
+                    )
+            gX_system_values = np.concatenate((gX_values, systems_values), axis=1)
         else:
             gX_system_values = gX_values
         self.indicadora = 1.0 * (gX_system_values < 0.0)
@@ -240,7 +253,7 @@ class WASM(object):
             w_failure[:, i] = self.indicadora[:, i] * w_normalized
         pfs = np.zeros(indicadora_cols)
         for i in range(indicadora_cols):
-            pfs[i] = min(w_failure[:, i].sum(), 1.0 - 1e-16)
+            pfs[i] = min(w_failure[:, i].sum(), 1.0 - 1e-15)
         gXs_results = namedtuple("gXs_results", "pfs, betas")
         systems_results = namedtuple("systems_results", "pfs, betas")
         result = namedtuple("result", "gXs_results, systems_results")
