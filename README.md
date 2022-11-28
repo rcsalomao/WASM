@@ -1,16 +1,14 @@
-# **W**eighted **A**verage **S**imulation **M**ethod
+# Weighted Average Simulation Method - WASM
 
 This library represents the implementation of the simulation method presented in [1] to approximate the probability of failure of a system.
 As such, it is possible to numerically solve a reliability problem by Monte Carlo, taking in account diverse types of correlated random variables, analytical and numerical limit state functions and system definitions.
 
 ## Installation
----------------
 
 Just copy/git clone the WASM repository into your project root or someplace discoverable by your python environment (PYTHONPATH, sys.path, site-packages, etc).
 Creating a symbolic link on those places pointing to the WASM repo is also another option.
 
 ## Requirements
----------------
 
 This repo makes use of the following libraries:
 
@@ -21,7 +19,6 @@ This repo makes use of the following libraries:
 Please install them beforehand on your python environment.
 
 ## Usage
---------
 
 ### Random Variables
 
@@ -245,7 +242,6 @@ print(result.systems_results.betas)
 This same problem is described in the `example.py` file, together with, possibly, other problems.
 
 ## References
--------------
 
 [1]: Rashki M., Miri M., Moghaddam M. A. A new efficient simulation method to approximate the probability of failure and most probable point. Structural Safety 2012;39:22–9.
 
