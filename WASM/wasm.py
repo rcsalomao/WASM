@@ -6,6 +6,7 @@ import warnings
 from tqdm import tqdm
 from itertools import product
 from scipy.optimize import root
+import math
 
 # import matplotlib.pyplot as plt
 
@@ -60,23 +61,18 @@ def uniform_sampling(n_samples, bounds):
 
 def jittering_sampling(n_samples, bounds):
     n_dim = len(bounds)
-    n_div = int(np.power(n_samples, 1.0 / n_dim)) + 1
-    dim_ranges = []
-    for i in range(n_dim):
-        lb, ub = bounds[i]
-        dx = (ub - lb) / n_div
-        dim_range = []
-        for j in range(n_div):
-            lbx = lb + j * dx
-            ubx = lb + (j + 1) * dx
-            dim_range.append((lbx, ubx))
-        dim_ranges.append(dim_range)
-    products = list(product(range(n_div), repeat=n_dim))
-    xs = np.zeros((len(products), n_dim))
-    for j in range(len(products)):
-        for i in range(n_dim):
-            lbx, ubx = dim_ranges[i][products[j][i]]
-            xs[j, i] = np.random.uniform(lbx, ubx)
+    n_div = math.ceil(np.power(n_samples, 1.0 / n_dim))
+    grid_indexes = list(product(range(n_div), repeat=n_dim))
+    ddivs = [(ub - lb) / n_div for lb, ub in bounds]
+    n_samples = len(grid_indexes)
+    xs = np.zeros((n_samples, n_dim))
+    for i in range(n_samples):
+        grid_idx_tuple = grid_indexes[i]
+        for j in range(n_dim):
+            lb, ub = bounds[j]
+            xs[i, j] = (
+                lb + grid_idx_tuple[j] * ddivs[j] + np.random.uniform(0, ddivs[j])
+            )
     return xs
 
 
@@ -130,8 +126,8 @@ class WASM(object):
         Xi=None,
         Xd_lbub=None,
         correlation_matrix=None,
-        n_samples=10000,
-        inferior_superior_exponent=5.0,
+        n_samples=20000,
+        inferior_superior_exponent=6.0,
         sampling_method="jitter",
     ):
         sampling_map = {
@@ -244,16 +240,15 @@ class WASM(object):
         random_vars = self.Xi + Xd
         for i in range(self.n_rv):
             pdfs[:, i] = random_vars[i].pdf(self.ui[:, i])
-        wi = np.multiply.reduce(pdfs, axis=1)
-        w_total = wi.sum()
-        w_normalized = wi / w_total
+        w_i = np.multiply.reduce(pdfs, axis=1)
+        w_total = w_i.sum()
         w_failure = np.zeros_like(self.indicadora)
-        indicadora_cols = self.indicadora.shape[1]
-        for i in range(indicadora_cols):
-            w_failure[:, i] = self.indicadora[:, i] * w_normalized
-        pfs = np.zeros(indicadora_cols)
-        for i in range(indicadora_cols):
-            pfs[i] = min(w_failure[:, i].sum(), 1.0 - 1e-15)
+        n_indicadora_cols = self.indicadora.shape[1]
+        for i in range(n_indicadora_cols):
+            w_failure[:, i] = self.indicadora[:, i] * w_i
+        pfs = np.zeros(n_indicadora_cols)
+        for i in range(n_indicadora_cols):
+            pfs[i] = min(w_failure[:, i].sum() / w_total, 1.0 - 1e-15)
         gXs_results = namedtuple("gXs_results", "pfs, betas")
         systems_results = namedtuple("systems_results", "pfs, betas")
         result = namedtuple("result", "gXs_results, systems_results")
