@@ -243,6 +243,6 @@ This same problem is described in the `example.py` file, together with, possibly
 
 ## References
 
-[1]: Rashki M., Miri M., Moghaddam M. A. A new efficient simulation method to approximate the probability of failure and most probable point. Structural Safety 2012;39:22–9.
+[1]: Rashki M, Miri M, Moghaddam M. A new efficient simulation method to approximate the probability of failure and most probable point. Structural Safety. 2012;39:22–29.
 
-[2]: Paulsinger F., Steinerberger S. On the discrepancy of jittered sampling. Journal of Complexity 2016;33:199–216.
+[2]: Paulsinger F, Steinerberger S. On the discrepancy of jittered sampling. Journal of Complexity. 2016;33:199–216.
