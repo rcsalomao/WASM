@@ -38,7 +38,7 @@ generate_RV_2_param(rv, mean, std, x0=(4.2, 2.4), method="lm", tol=1e-5):
 
 # x0: Initial values of mean and standard deviation. Those are used only as starting value for the root finding algorithm. They can, and should be, changed if there is some difficulty on convergence.
 
-# method: method for root finding (see "root" function from scipy.optimize).
+# method: Method for root finding (see "root" function from scipy.optimize).
 
 # tol: Tolerance value. After the root function invocation, there is a verification to check if the mean and standard deviation of the resulting random variable object has the desired mean and std. That is, abs(rv.mean() - mean) < tol and abs(rv.std() - std) < tol.
 ```
@@ -52,37 +52,41 @@ X3 = generate_RV_2_param(scipy.stats.lognorm, 5.8, 1.9)
 
 Xi = [X1, X2, X3]
 
-Xd = [generate_RV_2_param(st.lognorm, 5.0, 0.8)]
+Xd = [generate_RV_2_param(scipy.stats.lognorm, 5.0, 0.8)]
 
 Xd_lbub = [
     (
-        generate_RV_2_param(st.lognorm, 4.2, 0.25*4.9),
-        generate_RV_2_param(st.lognorm, 9.1, 0.25*9.1)
+        generate_RV_2_param(scipy.stats.lognorm, 4.2, 0.25*4.9),
+        generate_RV_2_param(scipy.stats.lognorm, 9.1, 0.25*9.1)
     )
 ]
 ```
 
 ### Limit State Functions
 
-Limit state functions define the modes of failure of interest. Those are a function of the random and deterministic variables of the problem. The vector of random variables is denoted (in index notation) as $X_m$, whereas the vector of deterministic variables is described as $d_n$. A distinction is made for the random variables, resulting in 2 groups of random variables:
+Limit state functions define the modes of failure of interest.
+Those are a function of the random and deterministic variables of the problem.
+The vector of random variables is denoted (in index notation) as $X_m$, whereas the vector of deterministic variables is described as $d_n$.
+A distinction is made for the random variables, resulting in 2 groups of random variables:
 
 - $Xi_m$ is a vector of *independent* random variables.
 - $Xd_m$ is a vector of *design* random variables.
 
 $d_n$ is also described as a vector of *design* deterministic variables.
 
-The *design* variables, both random and deterministic, are employed in the context of numerical optimization. The use of this library for solving optimization problems with reliability constraints won't be discussed in this repo. For that case, I shall create another repo specifically to show it's use.
+The *design* variables, both random and deterministic, are employed in the context of numerical optimization.
+The use of this library for solving optimization problems with reliability constraints won't be discussed in this repo.
+For that case, I shall create another repo specifically to show it's use.
 
 With that said, the description of a limit state function $g$ is given as:
-
 ```python
 g(Xi, Xd, d):
 
-# Xi: list of independent random variable objects.
+# Xi: A list of independent random variable objects.
 
-# Xd: list of design random variable objects.
+# Xd: A list of design random variable objects.
 
-# d: list of design deterministic variable.
+# d: A list of design deterministic variable.
 ```
 
 The limit state function can be defined as analytical or numerical (by wrapping the numerical method function).
@@ -111,9 +115,9 @@ limit_state_functions = [g1, g2, g3]
 
 ### System Definitions
 
-A system definition is expressed as a dictionary with key either "serial" or "parallel" and value representing a list made of integers and/or subsystem definition dictionaries.
-The integer values map out to the position index of a limit state function contained in the limit state functions input list.
-That way, it's possible to represent "serial", "parallel" and mixed/hybrid systems.
+A system definition is expressed as a dictionary with key either "serial" or "parallel" and a value representing a list made of integers and/or subsystem definition dictionaries.
+The integer values map out to the index position of a limit state function contained in the limit state functions input list.
+This way, it's possible to represent "serial", "parallel" and mixed/hybrid systems.
 
 #### Examples
 
@@ -130,8 +134,9 @@ system_definitions = [system1, system2, system3]
 
 ### WASM Interface
 
-The main numerical method is contained in the WASM object. It's methods compose the interface available to the user to solve the reliability problem. The following methods are exposed to the user:
-
+The main numerical method is contained in the WASM object.
+It's methods compose the interface available to the user to solve the reliability problem.
+The following methods are exposed to the user:
 ```python
 WASM(...)
 WASM.write_samples(...)
@@ -140,13 +145,12 @@ WASM.compute_beta_Rashki(...)
 ```
 
 The constructor has the following signature and accepts the input parameters of:
-
 ```python
 WASM(Xi=None, Xd_lbub=None, correlation_matrix=None, n_samples=10000, inferior_superior_exponent=5, sampling_method="jitter"):
 
-# Xi: list of independent random variable objects.
+# Xi: A list of independent random variable objects.
 
-# Xd_lbub: list of tuples of design random variable objects that define the lower bound and upper bound for each one of the design random variable problem dimension.
+# Xd_lbub: A list of tuples of design random variable objects that define the lower bound and upper bound for each one of the design random variable problem dimension.
 
 # correlation_matrix: A correlation matrix respective to both independent and design random variables. This matrix must be symmetrical and square. If None, it's assumed that all random variables are completely uncorrelated.
 
@@ -157,10 +161,12 @@ WASM(Xi=None, Xd_lbub=None, correlation_matrix=None, n_samples=10000, inferior_s
 # sampling_method: Sampling method to be used for the sampling process. The possible values are "jitter", "uniform", "sobol", "halton" or "lhs". "sobol", "halton" and "lhs" samplings are done with the routines found on scipy.stats.qmc while "jitter" follows the method described in [2].
 ```
 
-When invoking the constructor, only the sampling process is realized. The evaluation of the limit state functions are made by calling the appropriate method. That way it's possible to use the same set of samples to reevaluate the limit state functions if necessary. This proves crucial in the context of numerical optimization.
+When invoking the constructor, only the sampling process is realized.
+The evaluation of the limit state functions are made by calling the appropriate method.
+That way it's possible to use the same set of samples to reevaluate the limit state functions if necessary.
+This proves crucial in the context of numerical optimization.
 
 If it's necessary to save the coordinates of the generated samples, the following method can be used:
-
 ```python
 WASM.write_samples(filename, d_lbub=None):
 
@@ -169,7 +175,8 @@ WASM.write_samples(filename, d_lbub=None):
 # d_lbub: A list of tuples defining lower and upper bounds for each one of the deterministic design variables. Those will be uniformly sampled on said interval.
 ```
 
-The following method is responsible to evaluate the limit state functions on each one of the sampled points. After the evaluation, it is internally stored a vector that indicates the failure or survival of the limit state functions and systems on each point.
+The following method is responsible to evaluate the limit state functions on each one of the sampled points.
+After the evaluation, it is internally stored a vector that indicates the failure or survival of the limit state functions and systems on each point.
 
 ```python
 WASM.compute_limit_state_functions(limit_state_functions, system_definitions=None, d=None, disable_progress_bar=False):
@@ -178,27 +185,32 @@ WASM.compute_limit_state_functions(limit_state_functions, system_definitions=Non
 
 # system_definitions: A list of system definitions.
 
-# d: list of design deterministic variable.
+# d: A list of design deterministic variable.
 
 # disable_progress_bar: A boolean value to suppress the terminal progress bar for the limit state evaluations.
 ```
 
-Finally, it is possible to compute the failure's probability of the defined problem. Having a separate method is interesting in the context of optimization where it is necessary to change the atributes if the *design* random variables to find the optimum parameters for the objective function.
+Finally, it is possible to compute the failure's probability of the defined problem.
+Having a separate method is interesting in the context of optimization where it is necessary to change the atributes if the *design* random variables to find the optimum parameters for the objective function.
 
 ```python
 WASM.compute_beta_Rashki(Xd=None):
 
-# Xd: list of design random variable objects.
+# Xd: A list of design random variable objects.
 ```
 
 ### Result object
 
-The result object is a namedtuple of type `result(gX_results, system_results)`. With `gX_results` and `system_results` of types `gX_results(pfs, betas)` and `system_results(pfs, betas)` respectively. Both `pfs` and `betas` are lists of failure probabilities and $\beta$ indexes of the limit state functions and system definitions. The positional indexes of those values correspond to the same indexes as the input variables on the `WASM.compute_limit_state_functions(...)` method.
+The result object is a namedtuple of type `result(gX_results, system_results)`.
+With `gX_results` and `system_results` of types `gX_results(pfs, betas)` and `system_results(pfs, betas)` respectively.
+Both `pfs` and `betas` are lists of failure probabilities and $\beta$ indexes of the limit state functions and system definitions.
+The positional indexes of those values correspond to the same indexes as the input variables on the `WASM.compute_limit_state_functions(...)` method.
 
 ### Numerical example
 
-The following example is the second numerical problem on [1]. It's the reliability analysis of a reinforced concrete beam, with failure mode given by limit state function $g_1$. It's problem definition and resolution by the WASM library implemented is as:
-
+The following example is the second numerical problem on [1].
+It's the reliability analysis of a reinforced concrete beam, with failure mode given by the limit state function $g_1$.
+The problem definition and resolution by the WASM library implemented is:
 ```python
 def g1(Xi, Xd, d):
     Fy, As, Fc, Q = Xi
@@ -208,10 +220,10 @@ def g1(Xi, Xd, d):
 limit_state_functions = [g1]
 
 Xi = [
-    st.norm(44, 0.105 * 44),
-    st.norm(4.08, 0.02 * 4.08),
-    st.norm(3.12, 0.14 * 3.12),
-    st.norm(2052, 0.12 * 2052),
+    scipy.stats.norm(44, 0.105 * 44),
+    scipy.stats.norm(4.08, 0.02 * 4.08),
+    scipy.stats.norm(3.12, 0.14 * 3.12),
+    scipy.stats.norm(2052, 0.12 * 2052),
 ]
 
 d = [12, 19]
