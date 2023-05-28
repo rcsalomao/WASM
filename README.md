@@ -24,11 +24,11 @@ Please install them beforehand on your python environment.
 
 The random variables to supply as input must be random variable objects from scipy.stats module.
 In this manner, the user is responsible for the random variables specific parameters and fitting process.
-The function `generate_RV_2_param(...)` is also supplied to help finding a random variable with desired mean $\mu$ and standard deviation $\sigma$.
+The function `generate_RV(...)` is also supplied to help finding a random variable with desired mean $\mu$ and standard deviation $\sigma$.
 
 The input description of said function is:
 ```python
-generate_RV_2_param(rv, mean, std, x0=(4.2, 2.4), method="lm", tol=1e-5):
+generate_RV(rv, mean, std, fixed_params: dict[str:float], search_params: list[str], x0=None, method="lm", tol=1e-4):
 
 # rv: Random variable object from scipy.stats.
 
@@ -36,7 +36,11 @@ generate_RV_2_param(rv, mean, std, x0=(4.2, 2.4), method="lm", tol=1e-5):
 
 # std: Standard deviation value of the resulting random variable.
 
-# x0: Initial values of mean and standard deviation. Those are used only as starting value for the root finding algorithm. They can, and should be, changed if there is some difficulty on convergence.
+# fixed_params: Dictionary defining the values of the random variable parameters that will be adopted throught the root finding process to fit the scipy.stats random variable object.
+
+# search_params: List of parameter names of the scipy.stats random variable object that will be fitted by the root finding algorithm, resulting in an object with the desired mean and/or standard deviation value(s).
+
+# x0: A initial values list of [mean] or [mean, standard deviation]. Those are used only as starting value for the root finding algorithm. They can, and should be, changed if there is some difficulty on convergence.
 
 # method: Method for root finding (see "root" function from scipy.optimize).
 
@@ -48,16 +52,42 @@ generate_RV_2_param(rv, mean, std, x0=(4.2, 2.4), method="lm", tol=1e-5):
 ```python
 X1 = scipy.stats.norm()
 X2 = scipy.stats.norm(9.9, 0.8)
-X3 = generate_RV_2_param(scipy.stats.lognorm, 5.8, 1.9)
+X3 = generate_RV(
+    scipy.stats.gumbel_l,
+    5.8,
+    1.9,
+    fixed_params={},
+    search_params=["loc", "scale"]
+)
 
 Xi = [X1, X2, X3]
 
-Xd = [generate_RV_2_param(scipy.stats.lognorm, 5.0, 0.8)]
+Xd = [
+    generate_RV(
+        scipy.stats.lognorm,
+        5.0,
+        1.2,
+        fixed_params={"loc": 0},
+        search_params=["s", "scale"]
+    )
+]
 
 Xd_lbub = [
     (
-        generate_RV_2_param(scipy.stats.lognorm, 4.2, 0.25*4.9),
-        generate_RV_2_param(scipy.stats.lognorm, 9.1, 0.25*9.1)
+        generate_RV(
+            scipy.stats.weibull_min,
+            4.2,
+            0.25*4.2,
+            {"loc": 0},
+            ["c", "scale"]
+        ),
+        generate_RV(
+            scipy.stats.weibull_min,
+            9.1,
+            0.25*9.1,
+            {"loc": 0},
+            ["c", "scale"]
+        )
     )
 ]
 ```
