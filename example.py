@@ -1,4 +1,4 @@
-from WASM import WASM, generate_RV_2_param
+from WASM import WASM, generate_RV
 import scipy.stats as st
 import numpy as np
 
