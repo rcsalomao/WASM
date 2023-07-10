@@ -47,13 +47,46 @@ def rcbeam():
     print(result.systems_results.betas)
 
 
-def random_vars_generation():
-    rv = generate_RV(
+def generate_random_vars():
+    rv = generate_RV.normal(42, 2.4)
+    print(rv.mean(), rv.std())
+
+    rv = generate_RV.generic(
         st.lognorm, 42, 2.4, fixed_params={"loc": 0}, search_params=["s", "scale"]
     )
     print(rv.mean(), rv.std())
 
+    rv = generate_RV.lognormal(42, 2.4)
+    print(rv.mean(), rv.std())
+
+    rv = generate_RV.gumbel(42, 2.4)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"), rv.interval(1))
+
+    rv = generate_RV.weibull(42, 2.4)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"))
+
+    rv = generate_RV.frechet(42, 2.4)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"))
+
+    rv = generate_RV.beta(42, 2.4, lower_bound=30, upper_bound=50)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"), rv.interval(1))
+
+    rv = generate_RV.uniform(42, 2.4)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"), rv.interval(1))
+
+    rv = generate_RV.gamma(42, 2.4)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"))
+
+    rv = generate_RV.rayleigh(42)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"), rv.interval(1))
+
+    rv = generate_RV.maxwell(42)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"), rv.interval(1))
+
+    rv = generate_RV.exponential(42)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"))
+
 
 if __name__ == "__main__":
-    # rcbeam()
-    random_vars_generation()
+    rcbeam()
+    # generate_random_vars()
