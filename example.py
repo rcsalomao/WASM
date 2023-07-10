@@ -47,5 +47,13 @@ def rcbeam():
     print(result.systems_results.betas)
 
 
+def random_vars_generation():
+    rv = generate_RV(
+        st.lognorm, 42, 2.4, fixed_params={"loc": 0}, search_params=["s", "scale"]
+    )
+    print(rv.mean(), rv.std())
+
+
 if __name__ == "__main__":
-    rcbeam()
+    # rcbeam()
+    random_vars_generation()
