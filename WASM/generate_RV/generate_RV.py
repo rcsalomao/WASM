@@ -44,65 +44,190 @@ def normal(mean, std):
     return st.norm(mean, std)
 
 
-def lognormal(mean, std):
+def lognormal(
+    mean,
+    std,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.lognorm, mean, std, fixed_params={"loc": 0}, search_params=["s", "scale"]
+        st.lognorm,
+        mean,
+        std,
+        fixed_params={"loc": 0},
+        search_params=["s", "scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def gumbel(mean, std):
+def gumbel(
+    mean,
+    std,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.gumbel_r, mean, std, fixed_params={}, search_params=["loc", "scale"]
+        st.gumbel_r,
+        mean,
+        std,
+        fixed_params={},
+        search_params=["loc", "scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def weibull(mean, std):
+def weibull(
+    mean,
+    std,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.weibull_min, mean, std, fixed_params={"loc": 0}, search_params=["c", "scale"]
+        st.weibull_min,
+        mean,
+        std,
+        fixed_params={"loc": 0},
+        search_params=["c", "scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def frechet(mean, std):
+def frechet(
+    mean,
+    std,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.invweibull, mean, std, fixed_params={"loc": 0}, search_params=["c", "scale"]
+        st.invweibull,
+        mean,
+        std,
+        fixed_params={"loc": 0},
+        search_params=["c", "scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def beta(mean, std, lower_bound=0, upper_bound=1):
+def beta(
+    mean,
+    std,
+    lower_bound=0,
+    upper_bound=1,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
         st.beta,
         mean,
         std,
         fixed_params={"loc": lower_bound, "scale": upper_bound - lower_bound},
         search_params=["a", "b"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def gamma(mean, std):
+def gamma(
+    mean,
+    std,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.gamma, mean, std, fixed_params={"loc": 0}, search_params=["a", "scale"]
+        st.gamma,
+        mean,
+        std,
+        fixed_params={"loc": 0},
+        search_params=["a", "scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def uniform(mean, std):
+def uniform(
+    mean,
+    std,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.uniform, mean, std, fixed_params={}, search_params=["loc", "scale"]
+        st.uniform,
+        mean,
+        std,
+        fixed_params={},
+        search_params=["loc", "scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def rayleigh(mean):
+def rayleigh(
+    mean,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.rayleigh, mean, None, fixed_params={"loc": 0}, search_params=["scale"]
+        st.rayleigh,
+        mean,
+        None,
+        fixed_params={"loc": 0},
+        search_params=["scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def maxwell(mean):
+def maxwell(
+    mean,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.maxwell, mean, None, fixed_params={"loc": 0}, search_params=["scale"]
+        st.maxwell,
+        mean,
+        None,
+        fixed_params={"loc": 0},
+        search_params=["scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
 
 
-def exponential(mean):
+def exponential(
+    mean,
+    x0: list[float] | None = None,
+    method="lm",
+    tol=1e-4,
+):
     return generic(
-        st.expon, mean, None, fixed_params={"loc": 0}, search_params=["scale"]
+        st.expon,
+        mean,
+        None,
+        fixed_params={"loc": 0},
+        search_params=["scale"],
+        x0=x0,
+        method=method,
+        tol=tol,
     )
