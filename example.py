@@ -62,6 +62,9 @@ def generate_random_vars():
     rv = generate_RV.gumbel(42, 2.4)
     print(rv.mean(), rv.std(), rv.stats(moments="s"), rv.interval(1))
 
+    rv = generate_RV.type_I_smallest_value(42, 2.4)
+    print(rv.mean(), rv.std(), rv.stats(moments="s"), rv.interval(1))
+
     rv = generate_RV.weibull(42, 2.4)
     print(rv.mean(), rv.std(), rv.stats(moments="s"))
 
@@ -74,7 +77,7 @@ def generate_random_vars():
     rv = generate_RV.uniform(42, 2.4)
     print(rv.mean(), rv.std(), rv.stats(moments="s"), rv.interval(1))
 
-    rv = generate_RV.gamma(42, 2.4)
+    rv = generate_RV.gamma(42, 2.4, loc=0)
     print(rv.mean(), rv.std(), rv.stats(moments="s"))
 
     rv = generate_RV.rayleigh(42)
