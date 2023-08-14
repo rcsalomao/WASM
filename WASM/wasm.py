@@ -47,6 +47,16 @@ def uniform_sampling(n_samples, bounds):
     return np.random.uniform(lb, ub, (n_samples, n_bounds))
 
 
+def antithetic_sampling(n_samples, bounds):
+    n_bounds = len(bounds)
+    lb = np.array([lo for lo, _ in bounds])
+    ub = np.array([up for _, up in bounds])
+    ui = np.random.uniform(lb, ub, (math.ceil(n_samples / 2), n_bounds))
+    cdf_ui = st.uniform.cdf(ui, loc=lb, scale=ub - lb)
+    complement_ui = st.uniform.ppf(1 - cdf_ui, loc=lb, scale=ub - lb)
+    return np.concatenate((ui, complement_ui))
+
+
 def jittering_sampling(n_samples, bounds):
     n_dim = len(bounds)
     n_div = math.ceil(np.power(n_samples, 1.0 / n_dim))
@@ -121,13 +131,14 @@ class WASM(object):
         sampling_map = {
             "jitter": jittering_sampling,
             "uniform": uniform_sampling,
+            "antithetic": antithetic_sampling,
             "sobol": sobol_sampling,
             "halton": halton_sampling,
             "lhs": lhc_sampling,
         }
         assert (
             sampling_method in sampling_map.keys()
-        ), "Please enter either 'jitter', 'uniform', 'sobol', 'halton' or 'lhs'."
+        ), "Please enter either 'jitter', 'uniform', 'antithetic', 'sobol', 'halton' or 'lhs'."
         if Xi is None:
             Xi = []
         if Xd_lbub is None:

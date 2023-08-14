@@ -29,6 +29,7 @@ def rcbeam():
         inferior_superior_exponent=5,
         sampling_method="jitter",
         # sampling_method="uniform",
+        # sampling_method="antithetic",
         # sampling_method="sobol",
         # sampling_method="halton",
         # sampling_method="lhs",
