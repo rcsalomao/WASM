@@ -212,7 +212,7 @@ WASM(Xi=None, Xd_lbub=None, correlation_matrix=None, n_samples=10000, inferior_s
 
 # inferior_superior_exponent: In the WASM method it is necessary to estipulate minimum and maximum numerical bounds for the sampling process. In this implementation, as defined in [1], those bounds are obtained by the inverse of the random distribution CDF with inferior and superior probabilities. Those probabilities are (1e-n) and (1.0 - 1e-n), with "n" being the exponent with default value of 6.0.
 
-# sampling_method: Sampling method to be used for the sampling process. The possible values are "jitter", "uniform", "sobol", "halton" or "lhs". "sobol", "halton" and "lhs" samplings are done with the routines found on scipy.stats.qmc while "jitter" follows the method described in [2].
+# sampling_method: Sampling method to be used for the sampling process. The possible values are "jitter", "uniform", "antithetic", "sobol", "halton" or "lhs". "sobol", "halton" and "lhs" samplings are done with the routines found on scipy.stats.qmc while "jitter" follows the method described in [2].
 ```
 
 When invoking the constructor, only the sampling process is realized.
